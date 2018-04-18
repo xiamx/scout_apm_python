@@ -56,7 +56,7 @@ class TrackedRequest(ThreadLocalSingleton):
         return self.real_request
 
     def tag(self, key, value):
-        if hasattr(self.tags, key)
+        if hasattr(self.tags, key):
             logger.debug('Overwriting previously set tag for request %s: %s' % self.req_id, key)
         self.tags[key] = value
 
