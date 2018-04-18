@@ -16,12 +16,9 @@ class MiddlewareTimingMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        operation = 'Middleware'
-
-        TrackedRequest.instance().start_span(operation=operation)
-        response = self.get_response(request)
-        TrackedRequest.instance().stop_span()
-        return response
+        with TrackedRequest.instance().span(operation='Middleware'):
+            response = self.get_response(request)
+            return response
 
 class ViewTimingMiddleware:
     """
@@ -45,24 +42,26 @@ class ViewTimingMiddleware:
         """
 
         tr = TrackedRequest.instance()
-        tr.mark_real_request()
 
         # This operation name won't be recorded unless changed later in
         # process_view
-        operation = 'Unknown'
-        tr.start_span(operation=operation)
-        response = self.get_response(request)
-        tr.stop_span()
-        return response
+        with tr.span(operation='Unknown'):
+            response = self.get_response(request)
+            return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         """
         Capture details about the view_func that is about to execute
+
+        Does not start its own span, but saves onto the one started in the
+        __call__ method of this middleware
         """
 
-        view_name = request.resolver_match._func_path
-        span = TrackedRequest.instance().current_span()
+        tr = TrackedRequest.instance()
+        tr.mark_real_request()
+        span = tr.current_span()
         if span is not None:
+            view_name = request.resolver_match._func_path
             span.operation = 'Controller/' + view_name
             Context.add('path', request.path)
             Context.add('user_ip', request.get_host())

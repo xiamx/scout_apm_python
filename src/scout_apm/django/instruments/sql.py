@@ -22,27 +22,19 @@ logger = logging.getLogger(__name__)
 class _DetailedTracingCursorWrapper(CursorWrapper):
     def execute(self, sql, params=()):
         tr = TrackedRequest.instance()
-        span = tr.start_span(operation='SQL/Query')
-        span.tag('db.statement', sql)
-
-        try:
+        with tr.span(operation='SQL/Query') as span:
+            span.tag('db.statement', sql)
             return self.cursor.execute(sql, params)
-        finally:
-            tr.stop_span()
 
     def executemany(self, sql, param_list):
-        span = TrackedRequest.instance().start_span(operation='SQL/Many')
-        span.tag('db.statement', sql)
-
-        try:
+        tr = TrackedRequest.instance()
+        with tr.span(operation='SQL/Many') as span:
+            span.tag('db.statement', sql)
             return self.cursor.executemany(sql, param_list)
-        finally:
-            TrackedRequest.instance().stop_span()
 
 
 # pylint: disable=too-few-public-methods
 class SQLInstrument:
-
     # The linter thinks the methods we monkeypatch are not used
     # pylint: disable=W0612
     # pylint: disable=no-method-argument

@@ -12,6 +12,8 @@ def instrument_sqlalchemy(engine):
         tr = TrackedRequest.instance()
         tr.stop_span()
 
+    # We can get in the situation where we double-instrument the cursor. Avoid
+    # it by setting a flag and checking it before adding these listeners
     if getattr(engine, "_scout_instrumented", False) != True:
         event.listen(engine, 'before_cursor_execute', before_cursor_execute)
         event.listen(engine, 'after_cursor_execute', after_cursor_execute)

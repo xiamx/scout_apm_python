@@ -90,28 +90,16 @@ class ScoutApm(object):
 
                 tr = TrackedRequest.instance()
                 tr.mark_real_request()
-                span = tr.start_span(operation=operation)
 
-                for key in detail:
-                    span.tag(key, detail[key])
+                with tr.span(
+                        operation=operation,
+                        on_error=lambda _ty, _val, _trace: tr.tag('error', 'true')
+                        ) as span:
+                    span = tr.start_span(operation=operation)
 
-                # And the custom View stuff
-                #  request = args[0]
-
-                # Extract headers
-                #  regex = re.compile('^HTTP_')
-                #  headers = dict((regex.sub('', header), value) for (header, value)
-                #  in request.META.items() if header.startswith('HTTP_'))
-
-                #  span.tag('remote_addr', request.META['REMOTE_ADDR'])
-
-                try:
+                    for key in detail:
+                        span.tag(key, detail[key])
                     return original(*args, **kwargs)
-                except Exception as e:
-                    TrackedRequest.instance().tag('error', 'true')
-                    raise e
-                finally:
-                    TrackedRequest.instance().stop_span()
 
             return CallableProxy(func, tracing_function)
         except Exception as err:

@@ -23,16 +23,11 @@ def trace_method(cls, method_name=None):
                 operation = operation + '/' + detail['name']
 
             tr = TrackedRequest.instance()
-            span = tr.start_span(operation=operation)
+            with tr.span(operation=operation) as span:
+                for key in detail:
+                    span.tag(key, detail[key])
 
-            for key in detail:
-                span.tag(key, detail[key])
-
-            try:
                 return original(*args, **kwargs)
-            finally:
-                TrackedRequest.instance().stop_span()
-                logger.debug(span.dump())
         return tracing_method
     return decorator
 
@@ -50,16 +45,10 @@ def trace_function(func, info):
                 operation = operation + '/' + detail['name']
 
             tr = TrackedRequest.instance()
-            span = tr.start_span(operation=operation)
-
-            for key in detail:
-                span.tag(key, detail[key])
-
-            try:
+            with tr.span(operation=operation) as span:
+                for key in detail:
+                    span.tag(key, detail[key])
                 return original(*args, **kwargs)
-            finally:
-                TrackedRequest.instance().stop_span()
-                logger.debug(span.dump())
 
         return CallableProxy(func, tracing_function)
     except Exception:

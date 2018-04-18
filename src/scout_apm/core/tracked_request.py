@@ -12,6 +12,27 @@ from scout_apm.core.thread_local import ThreadLocalSingleton
 logger = logging.getLogger(__name__)
 
 
+class SpanManager():
+    """
+    Internal class, get an instance of by:
+
+    with TrackedRequest.instance().span(operation="SQL/Query") as span:
+    """
+    def __init__(self, tracked_request, operation, on_error=None):
+        self.tracked_request = tracked_request
+        self.on_error = on_error
+        self.operation = operation
+
+    def __enter__(self):
+        span = self.tracked_request.start_span(self.operation)
+        self.span = span
+        return span
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        if self.on_error is not None and exception_type is not None:
+            self.on_error(exception_type, exception_value, traceback)
+        self.tracked_request.stop_span()
+
 class TrackedRequest(ThreadLocalSingleton):
     """
     This is a container which keeps track of all module instances for a single
@@ -35,9 +56,15 @@ class TrackedRequest(ThreadLocalSingleton):
         return self.real_request
 
     def tag(self, key, value):
-        if hasattr(self.tags, key):
+        if hasattr(self.tags, key)
             logger.debug('Overwriting previously set tag for request %s: %s' % self.req_id, key)
         self.tags[key] = value
+
+    def span(self, operation=None, on_error=None):
+        """
+        Returns a Span ContextManager, wrapping a section of code
+        """
+        return SpanManager(self, operation=operation, on_error=on_error)
 
     def start_span(self, operation=None):
         maybe_parent = self.current_span()
@@ -55,6 +82,10 @@ class TrackedRequest(ThreadLocalSingleton):
         return new_span
 
     def stop_span(self):
+        if len(self.active_spans) == 0:
+            logger.debug('Skipping attempt to pop span off empty list')
+            return
+
         stopping_span = self.active_spans.pop()
         stopping_span.stop()
         self.complete_spans.append(stopping_span)
