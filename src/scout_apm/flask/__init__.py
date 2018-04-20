@@ -95,8 +95,6 @@ class ScoutApm(object):
                         operation=operation,
                         on_error=lambda _ty, _val, _trace: tr.tag('error', 'true')
                         ) as span:
-                    span = tr.start_span(operation=operation)
-
                     for key in detail:
                         span.tag(key, detail[key])
                     return original(*args, **kwargs)
