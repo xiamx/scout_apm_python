@@ -13,10 +13,17 @@ logger = logging.getLogger(__name__)
 
 def install():
     if not AgentContext.instance().config.value("monitor"):
+        print("Skipping Agent launch, monitor config is ", AgentContext.instance().config.value("monitor"))
         logger.debug('APM Not Launching on PID: %s - Configuration \'monitor\' is not true', getpid())
         return False
 
     logger.debug('APM Launching on PID: %s', getpid())
+
+    print("Launching CoreAgentManager")
     CoreAgentManager().launch()
+
+    print("Sending Metadata Report")
     AppMetadata.report()
+
+    print("Closing initial socket")
     AgentContext.socket().stop()

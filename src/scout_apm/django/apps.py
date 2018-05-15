@@ -18,20 +18,25 @@ class ScoutApmDjangoConfig(AppConfig):
     verbose_name = 'Scout Apm (Django)'
 
     def ready(self):
+        print('Ready called in ScoutApmDjangoConfig')
+
         # Copy django configuration to scout_apm's config
         ConfigAdapter.install()
 
         # Finish installing the agent. If the agent isn't installed for any
         # reason, return without installing instruments
         installed = scout_apm.core.install()
+        print('Attempted Scout Install, success?', installed)
         if installed is False:
             return
 
         self.install_middleware()
+        print('Installed Middleware')
 
         # Setup Instruments
         SQLInstrument.install()
         TemplateInstrument.install()
+        print('Installed Instruments')
 
     def install_middleware(self):
         """
@@ -41,11 +46,13 @@ class ScoutApmDjangoConfig(AppConfig):
         from django.conf import settings
 
         if isinstance(settings.MIDDLEWARE, tuple):
+            print('Adjusting Middleware Tuple')
             settings.MIDDLEWARE = (
                 ('scout_apm.django.middleware.MiddlewareTimingMiddleware', ) +
                 settings.MIDDLEWARE +
                 ('scout_apm.django.middleware.ViewTimingMiddleware', ))
         else:
+            print('Adjusting Middleware Array')
             settings.MIDDLEWARE.insert(0, 'scout_apm.django.middleware.MiddlewareTimingMiddleware')
             settings.MIDDLEWARE.append('scout_apm.django.middleware.ViewTimingMiddleware')
 

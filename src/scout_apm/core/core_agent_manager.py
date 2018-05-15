@@ -30,18 +30,24 @@ class CoreAgentManager:
 
     def launch(self):
         if AgentContext.instance().config.value('core_agent_launch') is not True:
+            print("Not attempting to launch Core Agent due to 'core_agent_launch' setting.")
             logger.debug("Not attempting to launch Core Agent "
                          "due to 'core_agent_launch' setting.")
             return
 
         if self.verify() is not True:
             if AgentContext.instance().config.value('core_agent_download') is True:
+                print("Downloading core agent")
                 self.download()
             else:
+                print("Not attempting to download Core Agent due "
+                             "to 'core_agent_download' setting.")
                 logger.debug("Not attempting to download Core Agent due "
                              "to 'core_agent_download' setting.")
 
         if self.verify() is not True:
+            print("Failed to verify Core Agent. "
+                  "Not launching Core Agent.")
             logger.debug("Failed to verify Core Agent. "
                          "Not launching Core Agent.")
             return False
@@ -64,6 +70,7 @@ class CoreAgentManager:
             process.wait()
         except Exception as e:
             # TODO detect failute of launch properly
+            print('Error running Core Agent: ', repr(e))
             logger.error('Error running Core Agent: %s', repr(e))
             return False
         return True
