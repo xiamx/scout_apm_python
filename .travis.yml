@@ -4,6 +4,9 @@ matrix:
     - python: 3.4
     - python: 3.5
     - python: 3.6
+    - python: 3.7
+      dist: xenial
+      sudo: true
     - python: "pypy3"
 
 cache: pip
@@ -25,7 +28,11 @@ install:
   - tox --version
 
 script:
-  - tox -v
+  - tox -v --workdir=/tmp/tox
+  - python setup.py bdist_wheel
+  - if [ "${TRAVIS_PYTHON_VERSION:-}" == "3.6" ]; then
+      python setup.py sdist;
+    fi
 
 after_failure:
   - more .tox/log/* | cat
@@ -36,12 +43,6 @@ notifications:
     on_success: never
     on_failure: always
 
-# branches:
-#   only:
-#     # release tags
-#     - /^v\d+\.\d+\.\d+.*$/
-#     - master
-
 deploy:
   provider: pypi
   user: scout
@@ -51,4 +52,3 @@ deploy:
   on:
     tags: true
     repo: scoutapp/scout_apm_python
-    condition: "$TRAVIS_PYTHON_VERSION = 3.6"
