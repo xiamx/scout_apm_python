@@ -65,7 +65,7 @@ class instrument(ContextDecorator):
 
     def __enter__(self):
         self.tr = TrackedRequest.instance()
-        self.span = tr.start_span(operation=self.operation)
+        self.span = self.tr.start_span(operation=self.operation)
         for key, value in self.tags.items():
             self.tag(key, value)
         return self
@@ -111,6 +111,7 @@ class Transaction(ContextDecorator):
     def __exit__(self, *exc):
         Transaction.stop()
         self.tr.stop_span()
+        self.tr.finish()
         return False
 
     def tag(self, key, value):
